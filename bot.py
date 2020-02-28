@@ -11,7 +11,7 @@ import random
 from attr import attr
 
 
-token = "NjQyOTY0NDc5NDc0NDAxMjkw.Xce1sg.LScQs6bASbGXV_iBGI8KoE2Es_I"
+token = "NjQyOTY0NDc5NDc0NDAxMjkw.XfQamw.6ala61Ml07tr62SgKsg4tcaQxvE"
 
 client = discord.Client()
 conn = None
@@ -29,6 +29,8 @@ Not_VisitedEnemies = []
 
 VisitedEnemies = []
 
+Equip = "False"
+
 @client.event
 async def on_ready():
     
@@ -42,6 +44,7 @@ async def on_message(message):
         global Not_VisitedEnemies
         global VisitedAllies
         global VisitedEnemies
+        global Equip
         try:
             conn = sqlite3.connect("CharacterDB.db")
             print(sqlite3.version)
@@ -60,13 +63,13 @@ async def on_message(message):
             elif '+' in mess:
                 num1 = ""
                 num2 = ""
-                aaa = False
+                plus = False
                 for char in mess: 
-                    if char.isdigit() and not aaa:
+                    if char.isdigit() and not plus:
                         num1 += char + ""
                     elif char == '+':
-                        aaa = True
-                    elif char.isdigit() and aaa:
+                        plus = True
+                    elif char.isdigit() and plus:
                         num2 += char + ""
                 num3 = random.randint(1,int(num1))
                 response = "```" + "You rolled a " + str(num3) + "\nSo your total is " + str(num3 + int(num2)) +"```"
@@ -152,9 +155,11 @@ async def on_message(message):
                 await message.channel.send("```" + Name +" is already in the Database please use !updatecharacter to change the character's stats```")
             else:
                 cursor.execute('''INSERT INTO Character(NAME, HC, HT, STR, MAG, DEF, RES, SPD, SKILL, LUCK, CLASS, CREST, SWORD, LANCE, BOW, AXE, BRAWL, REASON, FAITH, Level, EXP) 
-                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (Name, Health, Health, Str, Mag, Def, Res, Spd, Skill, Luck, Class, Crest, Sword, Lance, Bow, Axe, Brawl, Reason, Faith, 1, 0))
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (Name, Health, Health, Str, Mag, Def, Res, Spd, Skill, Luck, Class, Crest, Sword, Lance, Bow, Axe, Brawl, Reason, Faith, 1, 0))
                 cursor.execute('''INSERT INTO Chargold(NAME, MONEY, Item1, Item2, Item3, Item4, Item5, Item1uses, Item2uses, Item3uses, Item4uses, Item5uses) 
                             VALUES(?,0,"x","x","x","x","x",0,0,0,0,0)''', [Name])
+                cursor.execute('''INSERT INTO WeaponShit(NAME, WEAPON, STR, MAG, DEF, RES, SPD, SKILL, LUCK) 
+                            VALUES(?,"Unarmed",0,0,0,0,0,0,0)''', [Name])
                 await message.channel.send("```" + Name +" has been added```")
             conn.commit()
         elif message.content == "!fight" + mess[6:]:
@@ -181,6 +186,8 @@ async def on_message(message):
             crest1 = False
             cresttype = ""
             cresttype1 = ""
+            weapon2 = ""
+            bonus2 = 0
             for char in mess:
                 
                 if char == ' ':
@@ -191,9 +198,6 @@ async def on_message(message):
                     
                 elif count == 2:
                     character2 += char + ""
-                    
-                elif count == 3:
-                    att += char + ""
                     
             for row in cursor.execute("SELECT STR,Name FROM Character WHERE Name = ?",[character1]):
                 str1 = row[0]
@@ -233,59 +237,62 @@ async def on_message(message):
                 
             for row in cursor.execute("SELECT CREST, Name FROM Character WHERE Name = ?", [character1]):
                 cresttype = row[0]    
-                
-            if(att == "Sword"):
+            
+            for row in cursor.execute("SELECT WEAPON FROM WeaponShit WHERE Name = ?", [character1]):
+                weapon2 = row[0]  
+            
+            if(weapon2 == "Sword"):
                 for row in cursor.execute("SELECT SWORD, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Lance"):
+            elif(weapon2 == "Lance"):
                 for row in cursor.execute("SELECT LANCE, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Bow"):
+            elif(weapon2 == "Bow"):
                 for row in cursor.execute("SELECT BOW, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Axe"):
+            elif(weapon2 == "Axe"):
                 for row in cursor.execute("SELECT AXE, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Brawl"):
+            elif(weapon2 == "Brawl"):
                 for row in cursor.execute("SELECT BRAWL, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Reason"):
+            elif(weapon2 == "Reason"):
                 for row in cursor.execute("SELECT REASON, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
                     
-            elif(att == "Faith"):
+            elif(weapon2 == "Faith"):
                 for row in cursor.execute("SELECT FAITH, Name FROM Character WHERE Name = ?", [character1]):
                     weapon = row[0]
             
             if(weapon == "S+"):
                 bonus = 30
-                
+                bonus2 = 30
             elif(weapon == "S"):
                 bonus = 25
-                
+                bonus2 = 25
             elif(weapon == "A+" or weapon == "A"):
                 bonus = 20
-                
+                bonus2 = 20
             elif(weapon == "B" or weapon == "B+"):
                 bonus = 15
-                
+                bonus2 = 15
             elif(weapon == "C+" or weapon == "C"):
                 bonus = 10
-                
+                bonus2 = 10
             elif(weapon == "D" or weapon == "D+"):
                 bonus = 5
-              
+                bonus2 = 5
             hitrate = (skl * .8) + (luck1 * .5) + bonus + 100
             dodgerate = (spd) + (luck2 * .5)
             rannum = random.randint(1,100)
             hit = hitrate - dodgerate
             if(rannum < hit):
-                if (att == "Reason" or att == "Faith"):
+                if (weapon2 == "Reason" or weapon2 == "Faith"):
                     dam = int(mag) - int(res)
                     
                 else:
@@ -317,7 +324,7 @@ async def on_message(message):
                     damx = round(dam/5)
                     dam -= damx 
                 
-                lucktest = (round(luck1 *1.2) + 5) - luck2
+                lucktest = (round(luck1 *1.2) + 5 + bonus2) - luck2
                 rannum2 = random.randint(1,100)
                 print(rannum2)
                 if(rannum2 < lucktest):
@@ -339,53 +346,53 @@ async def on_message(message):
                         
                 if(int(health) <= 0 and not crest and not crit and not crest1):
                     await message.channel.send("```" + str(character2) +" takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and crest and not crit and crest1):
                     await message.channel.send("```" + str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and crest and not crit and cresttype == "A" and not crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and deals 5 extra damage! "+ str(character2) +" takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and crest and not crit and cresttype == "A" and crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and deals 5 extra damage! "+ str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and crest and not crit and cresttype == "B" and not crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and heals for 10% of the damage dealt!" + str(character2) +" takes " + str(dam) + " damage and has been knocked out!\n" + str(character1) + "now has " + str(healthx) + "health!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     cursor.execute("UPDATE Character SET HC = ? WHERE Name = ?", [healthx, character1])
                     
                 elif(int(health) <= 0 and crest and not crit and cresttype == "B" and crest1):                    
                     await message.channel.send("```" + str(character1) + "'s crest activates and heals for 10% of the damage dealt!" + str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!\n" + str(character1) + "now has " + str(healthx) + "health!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     cursor.execute("UPDATE Character SET HC = ? WHERE Name = ?", [healthx, character1])
                     
                 elif(int(health) <= 0 and crest and cresttype == "A" and crit and crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and deals 5 extra damage and lands a critical hit! "+ str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                 
                 elif(int(health) <= 0 and crest and cresttype == "A" and crit and not crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and deals 5 extra damage and lands a critical hit! "+ str(character2) +" takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                 
                 elif(int(health) <= 0 and crest and cresttype == "B" and crit and not crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and heals for 10% of the damage dealt and lands a critical hit! "+ str(character2) +" takes " + str(dam) + " damage and has been knocked out!\n" + str(character1) + "now has " + str(healthx) + "health!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and crest and cresttype == "B" and crit and crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and heals for 10% of the damage dealt and lands a critical hit! "+ str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!\n" + str(character1) + "now has " + str(healthx) + "health!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and not crest and crit and not crest1):
                     await message.channel.send("```" + str(character1) + " lands a critical hit! "+ str(character2) +" takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(int(health) <= 0 and not crest and crit and crest1):
                     await message.channel.send("```" + str(character1) + " lands a critical hit! "+ str(character2) +"'s crest activates and reduces damage by 20% but still takes " + str(dam) + " damage and has been knocked out!```")
-                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[character2])
+                    
                     
                 elif(crest and crit and cresttype == "A" and not crest1):
                     await message.channel.send("```" + str(character1) + "'s crest activates and deals 5 extra damage and lands a critical hit! " + str(character2) +" takes " + str(dam) + " + what effect " + str(character1) +"'s crest has! They have " + str(health) + " health left!```")   
@@ -570,36 +577,43 @@ async def on_message(message):
             hc = 0
             ht = 0
             heal = 0
+            weapon = ""
+            
             for char in mess: 
                 if char == ' ':
                     count = count + 1              
                 elif count == 1:
-                     Name += char + ""      
+                    Name += char + ""      
                 elif count == 2:
-                     Name1 += char + ""
+                    Name1 += char + ""
                 elif count == 3:
                     healtype += char + ""
-                
-            for row in cursor.execute("SELECT HC, Name FROM Character WHERE Name = ?", [Name1]):
-                hc = row[0]
-            for row in cursor.execute("SELECT HT, Name FROM Character WHERE Name = ?",[Name1]):
-                ht = row[0]
-            for row in cursor.execute("SELECT MAG, Name FROM Character WHERE Name = ?",[Name]):
-                Res = row[0]
-            print(healtype)
-            if healtype == "Physic":
-                
-                heal = int(Res/2)
-                hc = hc + int(Res/2)
+            for row in cursor.execute("SELECT WEAPON FROM WeaponShit WHERE Name = ?", [Name]):
+                weapon = row[0]
+            print(weapon)
+            if not weapon == "Faith":
+                await message.channel.send("```" + str(Name) + " has not equipped Faith and cannot heal anyone! They must equip faith to be able to heal others```")
             else:
-                heal = Res
-                hc += Res
-            if hc >= ht:
-                cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[Name1])
-                await message.channel.send("```" + str(Name) + " has healed "+ str(Name1) +" to full health!```")
-            else: 
-                cursor.execute("UPDATE Character SET HC = ? WHERE Name = ?",[hc, Name1])
-                await message.channel.send("```" + str(Name) + " has healed "+ str(heal) + " health to " + str(Name1) +"!```")
+                for row in cursor.execute("SELECT HC, Name FROM Character WHERE Name = ?", [Name1]):
+                    hc = row[0]
+                for row in cursor.execute("SELECT HT, Name FROM Character WHERE Name = ?",[Name1]):
+                    ht = row[0]
+                for row in cursor.execute("SELECT MAG, Name FROM Character WHERE Name = ?",[Name]):
+                    Res = row[0]
+                print(healtype)
+                if healtype == "Physic":
+            
+                    heal = int(Res/2)
+                    hc = hc + int(Res/2)
+                else:
+                    heal = Res
+                    hc += Res
+                if hc >= ht:
+                    cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[Name1])
+                    await message.channel.send("```" + str(Name) + " has healed "+ str(Name1) +" to full health!```")
+                else: 
+                    cursor.execute("UPDATE Character SET HC = ? WHERE Name = ?",[hc, Name1])
+                    await message.channel.send("```" + str(Name) + " has healed "+ str(heal) + " health to " + str(Name1) +"!```")
         
         elif message.content == "!fuckyou":
             await message.channel.send("```No fuck you!```")
@@ -1749,7 +1763,8 @@ async def on_message(message):
                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (NameT, HealthT, HealthT, StrT, MagT, DefT, ResT, SpdT, SkillT, LuckT, ClassT, SwordT, LanceT, BowT, AxeT, BrawlT, ReasonT, FaithT))
                 cursor.execute('''INSERT INTO Character(NAME, HC, HT, STR, MAG, DEF, RES, SPD, SKILL, LUCK, CLASS, SWORD, LANCE, BOW, AXE, BRAWL, REASON, FAITH) 
                         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (Name1 + "+" + Name, HealthT, HealthT, StrT, MagT, DefT, ResT, SpdT, SkillT, LuckT, ClassT, SwordT, LanceT, BowT, AxeT, BrawlT, ReasonT, FaithT))
-                
+                cursor.execute('''INSERT INTO WeaponShit(NAME, WEAPON, STR, MAG, DEF, RES, SPD, SKILL, LUCK) 
+                            VALUES(?,"Unarmed",0,0,0,0,0,0,0)''', [NameT])
                 await message.channel.send("```" + str(Name) + " and " + str(Name1) + " have been paired up! \nTo use the pairing use !fight " + str(NameT) + " [another character] [Weapon type]\nAlso don't forget to unpair them with !unpair " + str(NameT) + "```")
                 
         elif message.content == "!disbandpair" + mess[12:]:
@@ -1787,6 +1802,7 @@ async def on_message(message):
             if In == Name:
                 cursor.execute("DELETE FROM Character WHERE NAME = ?", [Name])
                 cursor.execute("DELETE FROM Character WHERE NAME = ?", [Namey + "+" + Namex])
+                cursor.execute("DELETE FROM WeaponShit WHERE NAME = ?", [Name])
                 await message.channel.send("```" + str(Namex) + " and " + str(Namey) + " have been unpaired!```")
 
             else:   
@@ -1891,8 +1907,9 @@ async def on_message(message):
                     count = count + 1              
                 elif count == 1:
                      Name += char + ""      
-                     
-            list = ["Sadon", "Nora", "Emily", "Ale", "Alice","Leo", "Leslie", "Yakov", "Orson", "Yurusu", "Monika", "Deloris", "Barabal", "Sawyer", "Ansel", "Wuji", "Flare", "Nex", "Valentin", "Maddie", "Delphi", "Suigi", "Takako", "Duff", "Veena", "Jules", "Nerin", "Kiyoshi", "Meldios", "Diya", "Oakley", "Dirk", "Flynn", "Lawrence", "Conway", "Damian", "Wren", "Oliver", "Azmon", "Pisti", "Onida"]
+            list = []         
+            for i in cursor.execute("SELECT Name FROM Character"):
+                list.append(i[0])
             Name1 = random.choice(list)
             if Name != "":         
                 await message.channel.send("```Deloris pulls out his gun and shoots " + str(Name) + " they take 999 damage instantly killing " + str(Name) + "```")
@@ -1909,7 +1926,9 @@ async def on_message(message):
                 elif count == 1:
                      Name += char + ""      
                      
-            list = ["Sadon", "Nora", "Emily", "Ale", "Alice","Leo", "Leslie", "Yakov", "Orson", "Yurusu", "Monika", "Deloris", "Barabal", "Sawyer", "Ansel", "Wuji", "Flare", "Nex", "Valentin", "Maddie", "Delphi", "Suigi", "Takako", "Duff", "Veena", "Jules", "Nerin", "Kiyoshi", "Meldios", "Diya", "Oakley", "Dirk", "Flynn", "Lawrence", "Conway", "Damian", "Wren", "Oliver", "Azmon", "Pisti", "Onida"]
+            list = []
+            for i in cursor.execute("SELECT Name FROM Character"):
+                list.append(i[0])
             Name1 = random.choice(list)
             await message.channel.send("```" + str(random.choice(list)) + " smooches " + str(Name1) + " how sweet uwu```")
             
@@ -2082,6 +2101,9 @@ async def on_message(message):
             Brawl = ""
             Reason = ""
             Faith = ""
+            Level = ""
+            EXP = ""
+            Weapon = ""
             for char in mess: 
                 if char == ' ':
                     count += 1
@@ -2119,8 +2141,14 @@ async def on_message(message):
                 Reason = row[0]
             for row in cursor.execute("SELECT FAITH FROM Character WHERE Name = ?",[Name]):
                 Faith = row[0]   
+            for row in cursor.execute("SELECT Level FROM Character WHERE Name = ?",[Name]):
+                Level = row[0]
+            for row in cursor.execute("SELECT EXP FROM Character WHERE Name = ?", [Name]):
+                EXP = row[0]
+            for row in cursor.execute("SELECT WEAPON FROM WeaponShit WHERE NAME = ?",[Name]):
+                Weapon = row[0]
                 
-            await message.channel.send("```" + str(Name) + "'s Stats:\nHealth: " + str(Health) + "/" + str(Health1) + "\nStrength: " + str(Str) +"\nMagic: " + str(Mag) + "\nDefense: " + str(Def) + "\nResistance: " + str(Res) + "\nSpeed: " + str(Spd)+ "\nSkill: " + str(Skill) + "\nLuck: " + str(Luck)+ "\n\n Weapon Grades:\nSword: " + str(Sword) + "\nLance: " + str(Lance) + "\nBow: " + str(Bow) + "\nAxe: " + str(Axe) + "\nBrawl: " + str(Brawl) + "\nReason: " + str(Reason) + "\nFaith: " + str(Faith) +"```")
+            await message.channel.send("```" + str(Name) + "'s Stats:\n\nLevel: " + str(Level) + "\nEXP: " + str(EXP) + "\nCurrently equipped: " + str(Weapon) + "\n\nHealth: " + str(Health) + "/" + str(Health1) + "\nStrength: " + str(Str) +"\nMagic: " + str(Mag) + "\nDefense: " + str(Def) + "\nResistance: " + str(Res) + "\nSpeed: " + str(Spd)+ "\nSkill: " + str(Skill) + "\nLuck: " + str(Luck)+ "\n\n Weapon Grades:\nSword: " + str(Sword) + "\nLance: " + str(Lance) + "\nBow: " + str(Bow) + "\nAxe: " + str(Axe) + "\nBrawl: " + str(Brawl) + "\nReason: " + str(Reason) + "\nFaith: " + str(Faith) +"```")
             
         elif message.content == "!Addtobattle" + mess[12:]:
             count = 0
@@ -2170,12 +2198,34 @@ async def on_message(message):
             print(Not_VisitedAllies)
             print(Not_VisitedEnemies)
             print(len(Not_VisitedAllies))
+            print(VisitedAllies)
+            print(VisitedEnemies)
+            
             if Phase == "Allies Phase":
+                for x in Not_VisitedAllies:
+                    Health = 0
+                    for row in cursor.execute("SELECT HC FROM Character WHERE Name = ?",[x]):
+                        Health = row[0]
+                    if Health <= 0:
+                        Not_VisitedAllies.remove(x)
+                        cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[x])
+                for x in Not_VisitedEnemies:
+                    Health = 0
+                    for row in cursor.execute("SELECT HC FROM Character WHERE Name = ?",[x]):
+                        Health = row[0]
+                    if Health <= 0:
+                        Not_VisitedEnemies.remove(x)
+                        cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[x])
                 if len(Not_VisitedAllies) == 1:
                     Name = Not_VisitedAllies[0]
+                    VisitedAllies.append(Not_VisitedAllies[0])
+                    Not_VisitedAllies.remove(Name)
                     for x in VisitedAllies:
-                        Not_VisitedAllies.insert(0,x)
-                        VisitedAllies.remove(VisitedAllies[0])
+                        print(x)
+                        Not_VisitedAllies.append(x)
+                        print(x)
+                        print(Not_VisitedAllies)
+                    VisitedAllies = []
                     if Name != "":
                         Str = 0
                         Health = 0
@@ -2379,13 +2429,12 @@ async def on_message(message):
                             
                         await message.channel.send("```" + Phase + " \n\nIts " + str(Name) + "'s turn!```")
                         print(Update)
-                        if Update == "True":
+                        if Update == "True" or Equip == "True":
                             Not_VisitedAllies = []
-                            x = "```Due to Buffs and Debuffs the Speed list has been updated!\nAllies Speed:\n"
+                            x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
                             for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
                                 Not_VisitedAllies.append(i[0])
                                 print(i[0])
-                                print("aaa")
                             print(Not_VisitedAllies)
                             for i in Not_VisitedAllies:
                                 Temp = i
@@ -2400,11 +2449,15 @@ async def on_message(message):
                                     x += Temp + ": " + str(Temp2) + "\n"
                                     print(Not_VisitedEnemies)
                             await message.channel.send(x + "```")
-                            Update = "False"
+                            if Update == "True":
+                                Update = "False"
+                            if Equip == "True":
+                                Equip == "False"
                         Phase = "Enemies Phase"
                     
                 elif len(Not_VisitedAllies) > 1:
                     Name = Not_VisitedAllies[0]
+                    print(Name)
                     VisitedAllies.append(Not_VisitedAllies[0])
                     Not_VisitedAllies.remove(Not_VisitedAllies[0])
                     
@@ -2611,11 +2664,31 @@ async def on_message(message):
                         await message.channel.send("```" + Phase + " \n\nIts " + str(Name) + "'s turn!```")
                     
             elif Phase == "Enemies Phase":
+                for x in Not_VisitedAllies:
+                    Health = 0
+                    for row in cursor.execute("SELECT HC FROM Character WHERE Name = ?",[x]):
+                        Health = row[0]
+                    if Health <= 0:
+                        Not_VisitedAllies.remove(x)
+                        cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[x])
+                for x in Not_VisitedEnemies:
+                    Health = 0
+                    for row in cursor.execute("SELECT HC FROM Character WHERE Name = ?",[x]):
+                        Health = row[0]
+                    if Health <= 0:
+                        Not_VisitedEnemies.remove(x)
+                        cursor.execute("UPDATE Character SET HC = HT WHERE Name = ?",[x])
                 if len(Not_VisitedEnemies) == 1:
                     Name = Not_VisitedEnemies[0]
+                    VisitedEnemies.append(Not_VisitedEnemies[0])
+                    Not_VisitedEnemies.remove(Name)
                     for x in VisitedEnemies:
-                        Not_VisitedEnemies.insert(0,x)
-                        VisitedEnemies.remove(VisitedEnemies[0])
+                        print(x)
+                        Not_VisitedEnemies.append(x)
+                        print(x)
+                        print(Not_VisitedEnemies)
+                    VisitedEnemies = []
+                    
                     if Name != "":
                         Str = 0
                         Health = 0
@@ -3111,6 +3184,113 @@ async def on_message(message):
                 cursor.execute('''INSERT INTO Buffs(NAME, STR, MAG, HEALTH, DEF, RES, SKILL, LUCK, STRTURNS, MAGTURNS, DEFTURNS, RESTURNS, HEALTHTURNS, SKILLTURNS, LUCKTURNS, SPD, SPDTURNS) 
                             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (Name, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0))
             if int(amount) > 0:
+                print(Type)
+                if Type == "STR":
+                    for row in cursor.execute("SELECT STR FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "MAG":
+                    for row in cursor.execute("SELECT MAG FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "DEF":
+                    for row in cursor.execute("SELECT DEF FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "RES":
+                    for row in cursor.execute("SELECT RES FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "HEALTH":
+                    for row in cursor.execute("SELECT HEALTH FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "SKILL":
+                    for row in cursor.execute("SELECT SKILL FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "LUCK":
+                    for row in cursor.execute("SELECT LUCK FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                elif Type == "SPD":
+                    for row in cursor.execute("SELECT SPD FROM Buffs WHERE Name = ?",[Name]):
+                        currthing = row[0]
+                        
+                if Type == "STR":
+                    for row in cursor.execute("SELECT STR FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "MAG":
+                    for row in cursor.execute("SELECT MAG FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "DEF":
+                    for row in cursor.execute("SELECT DEF FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "RES":
+                    for row in cursor.execute("SELECT RES FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "HEALTH":
+                    for row in cursor.execute("SELECT HT FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "SKILL":
+                    for row in cursor.execute("SELECT SKILL FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "LUCK":
+                    for row in cursor.execute("SELECT LUCK FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                elif Type == "SPD":
+                    for row in cursor.execute("SELECT SPD FROM Character WHERE Name = ?",[Name]):
+                        currthing2 = row[0]
+                print(currthing)
+                print(currthing2)
+                currthing = int(currthing) + int(amount)
+                currthing2 = int(currthing2) + int(amount)
+                print(currthing)
+                print(currthing2)
+                Turn = int(Turnx) + 1
+                if Type == "HEALTH":
+                    cursor.execute("UPDATE Buffs SET HEALTH = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET HEALTHTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "STR":
+                    cursor.execute("UPDATE Buffs SET STR = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET STRTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "MAG":
+                    cursor.execute("UPDATE Buffs SET MAG = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET MAGTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "DEF":
+                    cursor.execute("UPDATE Buffs SET DEF = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET DEFTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "RES":
+                    cursor.execute("UPDATE Buffs SET RES = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET RESTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "SKILL":
+                    cursor.execute("UPDATE Buffs SET SKILL = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET SKILLTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "LUCK":
+                    cursor.execute("UPDATE Buffs SET LUCK = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET LUCKTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                elif Type == "SPD":
+                    cursor.execute("UPDATE Buffs SET SPD = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET SPDTURNS = ? WHERE Name = ?",[int(Turn),Name])
+                if Type == "STR":
+                    cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "MAG":
+                    cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "DEF":
+                    cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "RES":
+                    cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "HEALTH":
+                    cursor.execute("UPDATE Character SET HT = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "SKILL":
+                    cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "LUCK":
+                    cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[currthing2, Name])
+                elif Type == "SPD":
+                    Update = "True"
+                    cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[currthing2, Name])
+                    if AAA == "B":
+                        cursor.execute("UPDATE InBattle SET SPD = ? WHERE Name = ?",[currthing2, Name])
+                    elif AAA == "A":
+                        cursor.execute("UPDATE Inbattleene SET SPD = ? WHERE Name = ?",[currthing2, Name])
+                
+                await message.channel.send("```" + str(Name) + "'s " + str(Type) + " has been buffed by " + str(amount) + " for " + str(Turn-1) + " turns! (If turns equal -1 this is a permanent buff!```")
+                
+                    
+            else:
                 if Type == "STR":
                     for row in cursor.execute("SELECT STR FROM Buffs WHERE Name = ?",[Name]):
                         currthing = row[0]
@@ -3163,119 +3343,32 @@ async def on_message(message):
                 
                 currthing = int(currthing) + int(amount)
                 currthing2 = int(currthing2) + int(amount)
-                Turn = int(Turnx) + 1
-                if Type == "HEALTH":
-                    cursor.execute("UPDATE Buffs SET HEALTH = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "STR":
-                    cursor.execute("UPDATE Buffs SET STR = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "MAG":
-                    cursor.execute("UPDATE Buffs SET MAG = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "DEF":
-                    cursor.execute("UPDATE Buffs SET DEF = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "RES":
-                    cursor.execute("UPDATE Buffs SET RES = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "SKILL":
-                    cursor.execute("UPDATE Buffs SET SKILL = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "LUCK":
-                    cursor.execute("UPDATE Buffs SET LUCK = ? WHERE Name = ?",[currthing , Name])
-                elif Type == "SPD":
-                    cursor.execute("UPDATE Buffs SET SPD = ? WHERE Name = ?",[currthing , Name])
-                if Type == "STR":
-                    cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "MAG":
-                    cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "DEF":
-                    cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "RES":
-                    cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "HEALTH":
-                    cursor.execute("UPDATE Character SET HT = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "SKILL":
-                    cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "LUCK":
-                    cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[currthing2, Name])
-                elif Type == "SPD":
-                    Update = "True"
-                    cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[currthing2, Name])
-                    if AAA == "B":
-                        cursor.execute("UPDATE InBattle SET SPD = ? WHERE Name = ?",[currthing2, Name])
-                    elif AAA == "A":
-                        cursor.execute("UPDATE Inbattleene SET SPD = ? WHERE Name = ?",[currthing2, Name])
-                
-                await message.channel.send("```" + str(Name) + "'s " + str(Type) + " has been buffed by " + str(amount) + " for " + str(Turn-1) + " turns! (If turns equal -1 this is a permanent buff!```")
-                
-                    
-            else:
-                if Type == "STR":
-                    for row in cursor.execute("SELECT STR FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "MAG":
-                    for row in cursor.execute("SELECT MAG FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "DEF":
-                    for row in cursor.execute("SELECT DEF FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "RES":
-                    for row in cursor.execute("SELECT RES FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "HEALTH":
-                    for row in cursor.execute("SELECT HEALTH FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "SKILL":
-                    for row in cursor.execute("SELECT SKILL FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "LUCK":
-                    for row in cursor.execute("SELECT LUCK FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                elif Type == "SPD":
-                    for row in cursor.execute("SELECT SPD FROM Buffs WHERE Name = ?",[Name]):
-                        currthing = row[0]
-                
-                if Type == "STR":
-                    for row in cursor.execute("SELECT STR FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "MAG":
-                    for row in cursor.execute("SELECT MAG FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "DEF":
-                    for row in cursor.execute("SELECT DEF FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "RES":
-                    for row in cursor.execute("SELECT RES FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "HEALTH":
-                    for row in cursor.execute("SELECT HT FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "SKILL":
-                    for row in cursor.execute("SELECT SKILL FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "LUCK":
-                    for row in cursor.execute("SELECT LUCK FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                elif Type == "SPD":
-                    for row in cursor.execute("SELECT SPD FROM Character WHERE Name = ?",[Name]):
-                        currthing2 = row[0]
-                
-                currthing = int(currthing) + int(amount)
-                currthing2 = int(currthing2) + int(amount)
                 
                 Turn1 = int(Turnx) + 1
                 if Type == "HEALTH":
                     cursor.execute("UPDATE Buffs SET HEALTH = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET HEALTHTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "STR":
                     cursor.execute("UPDATE Buffs SET STR = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET STRTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "MAG":
                     cursor.execute("UPDATE Buffs SET MAG = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET MAGTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "DEF":
                     cursor.execute("UPDATE Buffs SET DEF = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET DEFTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "RES":
                     cursor.execute("UPDATE Buffs SET RES = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET RESTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "SKILL":
                     cursor.execute("UPDATE Buffs SET SKILL = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET SKILLTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "LUCK":
                     cursor.execute("UPDATE Buffs SET LUCK = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET LUCKTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 elif Type == "SPD":
                     cursor.execute("UPDATE Buffs SET SPD = ? WHERE Name = ?",[currthing , Name])
+                    cursor.execute("UPDATE Buffs SET SPDTURNS = ? WHERE Name = ?",[int(Turn1),Name])
                 if Type == "STR":
                     cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[currthing2, Name])
                 elif Type == "MAG":
@@ -3318,7 +3411,7 @@ async def on_message(message):
                 EXP = row[0]
             for row in cursor.execute("SELECT Level FROM Character WHERE Name = ?",[Name]):
                 Level = row[0]
-            await message.channel.send("```" + str(Name) + " has earned  " + str(amount) + " EXP!```")
+            await message.channel.send("```" + str(Name) + " has earned " + str(amount) + " EXP!```")
             EXP = EXP + int(amount)
             while EXP >= 100:
                 if Level < 99:
@@ -3331,6 +3424,7 @@ async def on_message(message):
         elif message.content == "!Clearbattle" + mess[12:]:
             cursor.execute("DELETE FROM InBattle")
             cursor.execute("DELETE FROM Inbattleene")
+            Phase = ""
             Not_VisitedAllies = []
             Not_VisitedEnemies = []
             VisitedAllies = []
@@ -3430,21 +3524,1356 @@ async def on_message(message):
         elif message.content == "!Rob" + mess[4:]:
             count = 0
             Name = ""
+            Name1 = ""
             moneyc = 0
+            moneyc1 = 0
             monz = ""
             for char in mess: 
                 if char == ' ':
                     count = count + 1              
                 elif count == 1:
-                     Name += char + ""      
+                     Name += char + ""
                 elif count == 2:
+                    Name1+= char + ""
+                elif count == 3:
                      monz += char + ""
-            for row in cursor.execute("SELECT MONEY, Name FROM Chargold WHERE Name = ?",[Name]):
-                moneyc = row[0]
-            moneyc -= int(monz)
-            cursor.execute("UPDATE Chargold SET MONEY = ? WHERE Name = ?",[moneyc, Name])
-            await message.channel.send("```" + str(Name) + " has been robbed and lost "+ str(monz) + " gold! \nThey now have " + str(moneyc) + " gold in total!```")
+            if monz == "":
+                for row in cursor.execute("SELECT MONEY, Name FROM Chargold WHERE Name = ?",[Name]):
+                    moneyc = row[0]
+                moneyc -= int(Name1)
+                cursor.execute("UPDATE Chargold SET MONEY = ? WHERE Name = ?",[moneyc, Name])
+                await message.channel.send("```" + str(Name) + " has been robbed and lost "+ str(Name1) + " gold! \nThey now have " + str(moneyc) + " gold in total!```")
+            else:
+                for row in cursor.execute("SELECT MONEY, Name FROM Chargold WHERE Name = ?",[Name]):
+                    moneyc = row[0]
+                for row in cursor.execute("SELECT MONEY, Name FROM Chargold WHERE Name = ?",[Name1]):
+                    moneyc1 = row[0]
+                moneyc -= int(monz)
+                moneyc1 += int(monz)
+                cursor.execute("UPDATE Chargold SET MONEY = ? WHERE Name = ?",[moneyc, Name])
+                cursor.execute("UPDATE Chargold SET MONEY = ? WHERE Name = ?",[moneyc1, Name1])
+                await message.channel.send("```" + str(Name) + " has been robbed by " + str(Name1)+ " and lost "+ str(monz) + " gold! \nThey now have " + str(moneyc) + " gold in total!\n" + str(Name1) + " now has " + str(moneyc1) + " gold in total!```")
                 
+        elif message.content == "!Teacher":
+            list = ["Simos", "Aria", "Ellis", "Elliot", "Christine", "Ford"]
+            await message.channel.send("```" + str(random.choice(list)) + " is here! Everyone scatter!```")
+            
+        elif message.content == "!Turnorder":
+            Temp = ""
+            Temp2 = ""
+            x = "```Here is the current turn order!\nAllies Speed:\n"
+            for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                Temp = i[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                    Temp2 = row[0]
+                x += Temp + ": " + str(Temp2)+ "\n"
+            x += "\nEnemies' Speed:\n"
+            for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):                  
+                Temp = i[0]       
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                    Temp2 = row[0]
+                x += Temp + ": " + str(Temp2) + "\n"
+            await message.channel.send(x + "```")
+        
+        elif message.content == "!DeleteBattle":
+            name = ""
+            count = 0
+            for char in mess:
+                
+                if char == ' ':
+                    count = count + 1
+                    
+                elif count == 1:
+                    name += char + ""
+            
+            cursor.execute("DELETE from Battle where NAME = ?", [name])
+            await message.channel.send("```The battle named " + str(name) + " has been deleted!```")
+            
+        elif message.content == "!Equip" + mess[6:]:
+            count = 0
+            Name = ""
+            Weapon = ""
+            LastWeapon = ""
+            Buff1 = 0
+            Buff2 = 0
+            Debuff = 0
+            str1 = 0
+            mag1 = 0
+            def1 = 0
+            res1 = 0
+            spd1 = 0
+            skill1 = 0
+            luck1 = 0
+            fuck = 0
+            fuck2 = 0
+            fuck3 = 0
+            lastbuff1=0
+            lastbuff2=0
+            lastdebuff= 0
+            for char in mess: 
+                if char == ' ':
+                    count = count + 1              
+                elif count == 1:
+                    Name += char + ""
+                elif count == 2:
+                    Weapon += char + ""
+            for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?", [Name]):
+                str1 = row[0]
+            for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?", [Name]):
+                mag1 = row[0]
+            for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?", [Name]):
+                def1 = row[0]
+            for row in cursor.execute("SELECT RES FROM WeaponShit WHERE NAME = ?", [Name]):
+                res1 = row[0]
+            for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?", [Name]):
+                spd1 = row[0]
+            for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?", [Name]):
+                skill1 = row[0]
+            for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?", [Name]):
+                luck1 = row[0]  
+            for row in cursor.execute("SELECT WEAPON FROM WeaponShit WHERE NAME = ?", [Name]):
+                LastWeapon = row[0]  
+            if Weapon == "Sword" or Weapon == "SWORD" or Weapon == "sword" and not LastWeapon == "Sword":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Strt = 0
+                Spdt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Lance":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Sword", Name])
+                Buff1 = round(Str * .1)
+                Strt = Buff1 + Str
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[Buff1, Name])
+                Buff2 = round(Spd * .2)
+                Spdt = Buff2 + Spd
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[Buff2, Name])
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[Buff2, Name])
+                
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Strt, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spdt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Bow":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Skill Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Sword and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Spd Stat!```")
+                if AAA == "B":
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A":
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+                        
+            elif Weapon == "Axe" or Weapon == "AXE" or Weapon == "axe" and not LastWeapon == "Axe":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Strt = 0
+                Spdt = 0
+                Deft = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name = row[0]
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?", [Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?", [Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?", [Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?", [Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?", [Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Axe", Name])
+                Buff1 = round(Str * .27)
+                Strt = Buff1 + Str
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[Buff1, Name])
+                Debuff = 0 - (round(Spd * .1))
+                Spdt = Spd + Debuff
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[Debuff, Name])
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+                Buff2 = round(Def * .1)
+                Deft = Buff2 + Def
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[Buff2, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[0, Name])
+                
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Strt, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spdt, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Deft, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Bow":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Skill Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Axe and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Def Stat! But their Spd went down by " + str(Debuff) + "!```")
+                if AAA == "B":
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A":
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+                        
+            elif Weapon == "Lance" or Weapon == "LANCE" or Weapon == "lance" and not LastWeapon == "Lance":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Strt = 0
+                Skillt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Lance", Name])
+                Buff1 = round(Str * .15)
+                Strt = Buff1 + Str
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[Buff1, Name])
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                Buff2 = round(Skill * .15)
+                Skillt = Buff2 + Skill
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[Buff2, Name])
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[0, Name])
+                
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Strt, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skillt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Lance and they gained " + str(Buff1) + " to their Str Stat and " + str(Buff2) + " to their Skill Stat!```")
+                if AAA == "B" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+            
+            elif Weapon == "Brawl" or Weapon == "BRAWL" or Weapon == "brawl" and not LastWeapon == "Brawl":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Luckt = 0
+                Spdt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Lance":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["BRAWL", Name])
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[0, Name])
+                Buff1 = round(Spd * .15)
+                Spdt = Buff1 + Spd
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[Buff1, Name])
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[Buff2, Name])
+                Buff2 = round(Luck * .20)
+                Luckt = Buff2 + Luck
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[Buff2, Name])
+                
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spdt, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luckt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Bow":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Skill Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Brawl and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Spd Stat!```")
+                if AAA == "B":
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A":
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+                    
+            elif (Weapon == "Bow" or Weapon == "BOW" or Weapon == "bow") and not LastWeapon == "Bow":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Luckt = 0
+                Skillt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Lance":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["BOW", Name])
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[0, Name])
+                
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                Buff1 = round(Skill * .15)
+                Skillt = Buff1 + Skill
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[Buff1, Name])
+                Buff2 = round(Luck * .20)
+                Luckt = Buff2 + Luck
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[Buff2, Name])
+                
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skillt, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luckt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Bow and they gained " + str(Buff2) + " to their Luck Stat and " + str(Buff1) + " to their Skill Stat!```")
+                if AAA == "B" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+                        
+            elif (Weapon == "Reason" or Weapon == "REASON" or Weapon == "reason") and not LastWeapon == "Reason":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Magt = 0
+                Skillt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Lance":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Faith":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?", [Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Reason", Name])
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[0, Name])
+                Buff2 = round(Mag * .20)
+                Magt = Buff2 + Mag
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[Buff2, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                Buff1 = round(Skill * .15)
+                Skillt = Buff1 + Skill
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[Buff1, Name])
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[0, Name])
+                
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skillt, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Magt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Bow":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Skill Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                elif LastWeapon == "Faith":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Reason and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Skill Stat!```")
+                if AAA == "B" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+            
+            elif (Weapon == "Faith" or Weapon == "FAITH" or Weapon == "faith") and not LastWeapon == "Faith":
+                Str = 0
+                Mag = 0
+                Def = 0
+                Res = 0
+                Spd = 0
+                Skill = 0
+                Luck = 0
+                Magt = 0
+                Luckt = 0
+                AAA = ""
+                for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                    Str = row[0]
+                for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                    Mag = row[0]
+                for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                    Def = row[0]
+                for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                    Res = row[0]
+                for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                    Spd = row[0]
+                for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                    Skill = row[0]
+                for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                    Luck = row[0]
+                Str = Str - str1
+                Mag = Mag - mag1
+                Def = Def - def1
+                Res = Res - res1
+                Spd = Spd - spd1
+                Skill = Skill - skill1
+                Luck = Luck - luck1
+                cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+                cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+                cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+                cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+                cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+                cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+                if LastWeapon == "Sword":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Axe":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastdebuff = row[0]
+                if LastWeapon == "Lance":
+                    for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Brawl":
+                    for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Bow":
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                if LastWeapon == "Reason":
+                    for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff1 = row[0]
+                    for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?",[Name]):
+                        lastbuff2 = row[0]
+                        
+                for row in cursor.execute("SELECT Name FROM InBattle Where Name = ?",[Name]):
+                    Name1 = row[0]
+                    if Name1 == "":
+                        AAA = "A"
+                    else: 
+                        AAA = "B"
+                cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Faith", Name])
+                cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[0, Name])
+                Buff2 = round(Mag * .15)
+                Magt = Buff2 + Mag
+                cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[Buff2, Name])
+                cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+                cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[0, Name])
+                Buff1 = round(Luck * .15)
+                Luckt = Buff1 + Luck
+                cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[Buff1, Name])
+                
+                cursor.execute("UPDATE Character SET Luck = ? WHERE Name = ?",[Luckt, Name])
+                cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Magt, Name])
+                if LastWeapon == "Unarmed":
+                    await message.channel.send("```" + str(Name) + " has equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Axe":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Def Stat but regained " + str(lastdebuff) + " to their Speed Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Sword":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Spd Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Lance":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Str Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Brawl":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Spd Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Bow":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Skill Stat and " + str(lastbuff2) + " to their Luck Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                elif LastWeapon == "Reason":
+                    await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and they lost " + str(lastbuff1) + " to their Mag Stat and " + str(lastbuff2) + " to their Skill Stat!\nThey equipped Faith and they gained " + str(Buff2) + " to their Mag Stat and " + str(Buff1) + " to their Luck Stat!```")
+                if AAA == "B" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                elif AAA == "A" and (LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl"):
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
+        
+        elif message.content == "!Unequip" + mess[8:]:
+            count = 0
+            Name = ""
+            LastWeapon = ""
+            Buff1 = 0
+            Buff2 = 0
+            Debuff = 0
+            str1 = 0
+            mag1 = 0
+            def1 = 0
+            res1 = 0
+            spd1 = 0
+            skill1 = 0
+            luck1 = 0
+            lastbuff1=0
+            lastbuff2=0
+            lastdebuff= 0
+            Str=0
+            Mag=0
+            Def=0
+            Res=0
+            Spd=0
+            Skill=0
+            Luck=0
+            for char in mess: 
+                if char == ' ':
+                    count = count + 1              
+                elif count == 1:
+                    Name += char + ""
+            for row in cursor.execute("SELECT STR FROM WeaponShit WHERE NAME = ?", [Name]):
+                str1 = row[0]
+            for row in cursor.execute("SELECT MAG FROM WeaponShit WHERE NAME = ?", [Name]):
+                mag1 = row[0]
+            for row in cursor.execute("SELECT DEF FROM WeaponShit WHERE NAME = ?", [Name]):
+                def1 = row[0]
+            for row in cursor.execute("SELECT RES FROM WeaponShit WHERE NAME = ?", [Name]):
+                res1 = row[0]
+            for row in cursor.execute("SELECT SPD FROM WeaponShit WHERE NAME = ?", [Name]):
+                spd1 = row[0]
+            for row in cursor.execute("SELECT SKILL FROM WeaponShit WHERE NAME = ?", [Name]):
+                skill1 = row[0]
+            for row in cursor.execute("SELECT LUCK FROM WeaponShit WHERE NAME = ?", [Name]):
+                luck1 = row[0]  
+            for row in cursor.execute("SELECT STR FROM Character WHERE NAME = ?",[Name]):
+                Str = row[0]
+            for row in cursor.execute("SELECT MAG FROM Character WHERE NAME = ?",[Name]):
+                Mag = row[0]
+            for row in cursor.execute("SELECT DEF FROM Character WHERE NAME = ?",[Name]):
+                Def = row[0]
+            for row in cursor.execute("SELECT RES FROM Character WHERE NAME = ?",[Name]):
+                Res = row[0]
+            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?",[Name]):
+                Spd = row[0]
+            for row in cursor.execute("SELECT SKILL FROM Character WHERE NAME = ?",[Name]):
+                Skill = row[0]
+            for row in cursor.execute("SELECT LUCK FROM Character WHERE NAME = ?",[Name]):
+                Luck = row[0]
+            for row in cursor.execute("SELECT WEAPON FROM WeaponShit WHERE NAME = ?",[Name]):
+                LastWeapon = row[0]
+            Str = Str - str1
+            Mag = Mag - mag1
+            Def = Def - def1
+            Res = Res - res1
+            Spd = Spd - spd1
+            Skill = Skill - skill1
+            Luck = Luck - luck1
+            cursor.execute("UPDATE Character SET STR = ? WHERE Name = ?",[Str, Name])
+            cursor.execute("UPDATE Character SET MAG = ? WHERE Name = ?",[Mag, Name])
+            cursor.execute("UPDATE Character SET DEF = ? WHERE Name = ?",[Def, Name])
+            cursor.execute("UPDATE Character SET RES = ? WHERE Name = ?",[Res, Name])
+            cursor.execute("UPDATE Character SET SPD = ? WHERE Name = ?",[Spd, Name])
+            cursor.execute("UPDATE Character SET SKILL = ? WHERE Name = ?",[Skill, Name])
+            cursor.execute("UPDATE Character SET LUCK = ? WHERE Name = ?",[Luck, Name])
+            cursor.execute("UPDATE WeaponShit SET STR = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET SPD = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET MAG = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET DEF = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET RES = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET SKILL = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET LUCK = ? WHERE Name = ?",[0, Name])
+            cursor.execute("UPDATE WeaponShit SET Weapon = ? WHERE Name = ?",["Unarmed", Name])
+            await message.channel.send("```" + str(Name) + " has unequipped their " + str(LastWeapon) + " and lost all bonuses that came with it```")
+            if LastWeapon == "Sword" or LastWeapon == "Axe" or LastWeapon == "Brawl":
+                    if len(Not_VisitedEnemies) == 0 and Phase == "Allies Phase":
+                        Not_VisitedEnemies = []
+                        x = "```Due to Weapon Equipment the turn order has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Temp = i[0]
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM Inbattleene ORDER BY SPD DESC"):
+                            Not_VisitedEnemies.append(i[0]) 
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Allies Phase"
+                    else: 
+                        Equip = "True"
+                    if len(Not_VisitedAllies) == 0 and Phase == "Enemies Phase":
+                        Not_VisitedAllies = []
+                        x = "```Due to Buffs and Debuffs/Weapon Equipment the Speed list has been updated!\nAllies Speed:\n"
+                        for i in cursor.execute("SELECT Name FROM InBattle ORDER BY SPD DESC"):
+                            Not_VisitedAllies.append(i[0])
+                        for i in Not_VisitedAllies:
+                          Temp = i
+                          for row in cursor.execute("SELECT SPD FROM Character WHERE NAME = ?", [Temp]):
+                              Temp2 = row[0]
+                              x += Temp + ": " + str(Temp2)+ "\n"
+                        x += "\nEnemies' Speed:\n"
+                        for i in Not_VisitedEnemies:
+                            Temp = i
+                            for row in cursor.execute("SELECT SPD FROM Inbattleene WHERE NAME = ?", [Temp]):
+                                Temp2 = row[0]
+                                x += Temp + ": " + str(Temp2) + "\n"
+
+                        await message.channel.send(x + "```")
+                        if Update == "True":
+                            Update = "False"
+                        Phase = "Enemies Phase"
+                    else: 
+                        Equip = "True"
         conn.commit()
         cursor.close()
 client.run(token)
