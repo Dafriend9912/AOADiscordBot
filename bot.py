@@ -11,7 +11,7 @@ import random
 from attr import attr
 
 
-token = "NjQyOTY0NDc5NDc0NDAxMjkw.XfQamw.6ala61Ml07tr62SgKsg4tcaQxvE"
+token = "NjQyOTY0NDc5NDc0NDAxMjkw.XfQamw.6ala61Ml07tr62SgKsg4tcaQxv" #This is an invalid code
 
 client = discord.Client()
 conn = None
